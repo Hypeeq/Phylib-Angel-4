@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pool Table</title>
+<style>
+    #pool-table {
+        position: relative;
+    }
+</style>
+</head>
+<body>
+
+<div id="pool-table">
+    <svg id="svg" width="700" height="1375" viewBox="-25 -25 1400 2750"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+    <rect width="1350" height="2700" x="0" y="0" fill="#C0D0C0" />
+    <rect width="1400" height="25" x="-25" y="0" fill="darkgreen" />
+    <rect width="1400" height="25" x="-25" y="2700" fill="darkgreen" />
+    <rect width="25" height="2750" x="0" y="-25" fill="darkgreen" />
+    <rect width="25" height="2750" x="1350" y="-25" fill="darkgreen" />
+    <circle class="black-hole" cx="0" cy="0" r="114" />
+    <circle class="black-hole" cx="0" cy="1350" r="114" />
+    <circle class="black-hole" cx="0" cy="2700" r="114" />
+    <circle class="black-hole" cx="1350" cy="0" r="114" />
+    <circle class="black-hole" cx="1350" cy="1350" r="114" />
+    <circle class="black-hole" cx="1350" cy="2700" r="114" />
+    <circle id="cue-ball" cx="677" cy="1350" r="28" fill="WHITE" />
+    <line id="shot-line" x1="0" y1="0" x2="0" y2="0" style="stroke:black;stroke-width:3" />
+    </svg>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var svg = document.getElementById('svg');
+    var cueBall = document.getElementById('cue-ball');
+    var shotLine = document.getElementById('shot-line');
+
+    var isDragging = false;
+    var initialX, initialY;
+
+    cueBall.addEventListener('mousedown', function(event) {
+        isDragging = true;
+        initialX = event.clientX;
+        initialY = event.clientY;
+    });
+
+    document.addEventListener('mousemove', function(event) {
+        if (isDragging) {
+            var cueBallRect = cueBall.getBoundingClientRect();
+            var mouseX = event.clientX - initialX + parseFloat(cueBall.getAttribute('cx'));
+            var mouseY = event.clientY - initialY + parseFloat(cueBall.getAttribute('cy'));
+
+            shotLine.setAttribute('x1', cueBall.getAttribute('cx'));
+            shotLine.setAttribute('y1', cueBall.getAttribute('cy'));
+            shotLine.setAttribute('x2', mouseX);
+            shotLine.setAttribute('y2', mouseY);
+        }
+    });
+
+    document.addEventListener('mouseup', function(event) {
+        if (isDragging) {
+            isDragging = false;
+
+            var cueBallRect = cueBall.getBoundingClientRect();
+            var cueBallCenterX = cueBallRect.left + cueBallRect.width / 2;
+            var cueBallCenterY = cueBallRect.top + cueBallRect.height / 2;
+
+            var releaseX = event.clientX;
+            var releaseY = event.clientY;
+
+            var velocityX = releaseX - cueBallCenterX;
+            var velocityY = releaseY - cueBallCenterY;
+
+            var jsonData = {
+                svg: svg.outerHTML,
+                velocityX: velocityX,
+                velocityY: velocityY
+            };
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/shoot', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log('Shoot data sent successfully');
+                } else {
+                    console.error('Error sending shoot data');
+                }
+            };
+            xhr.onerror = function() {
+                console.error('Network error occurred');
+            };
+            xhr.send(JSON.stringify(jsonData));
+
+            shotLine.setAttribute('x1', 0);
+            shotLine.setAttribute('y1', 0);
+            shotLine.setAttribute('x2', 0);
+            shotLine.setAttribute('y2', 0);
+        }
+    });
+});
+</script>
+
+</body>
+</html>
