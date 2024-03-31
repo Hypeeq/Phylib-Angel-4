@@ -27,6 +27,9 @@
     <circle class="black-hole" cx="1350" cy="0" r="114" />
     <circle class="black-hole" cx="1350" cy="1350" r="114" />
     <circle class="black-hole" cx="1350" cy="2700" r="114" />
+    <circle cx="675" cy="675" r="28" fill="YELLOW" />
+    <circle cx="644" cy="621" r="28" fill="BLUE" />
+    <circle cx="705" cy="621" r="28" fill="RED" />
     <circle id="cue-ball" cx="677" cy="1350" r="28" fill="WHITE" />
     <line id="shot-line" x1="0" y1="0" x2="0" y2="0" style="stroke:black;stroke-width:3" />
     </svg>
@@ -34,6 +37,49 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    var poolTable = document.getElementById('pool-table');
+    var parser = new DOMParser();
+    // Function to append SVG to the DOM
+    function appendSVG(svgData) {
+        
+        var svgDoc = parser.parseFromString(svgData, 'image/svg+xml');
+        var svgElement = svgDoc.documentElement;
+        poolTable.innerHTML='';
+        poolTable.appendChild(svgElement);
+    }
+
+    // Function to handle receiving SVG information
+    function handleSVGInfo(svgInfo) {
+        for (var i = 0; i < svgInfo.length; i++) {
+            appendSVG(svgInfo[i]);
+        }
+    }
+
+    // Function to request SVG information
+    function requestSVGInfo() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/svg_info', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var svgInfo = JSON.parse(xhr.responseText);
+                
+                handleSVGInfo(svgInfo);
+            } else {
+                console.error('Error receiving SVG information');
+            }
+        };
+        xhr.onerror = function() {
+            console.error('Network error occurred');
+        };
+        xhr.send();
+    }
+
+    // Call requestSVGInfo function to fetch SVG information
+   
+
+    // Your existing JavaScript code for interacting with cue ball, shot line, etc. can be added here...
+
     var svg = document.getElementById('svg');
     var cueBall = document.getElementById('cue-ball');
     var shotLine = document.getElementById('shot-line');
@@ -86,6 +132,8 @@ document.addEventListener("DOMContentLoaded", function() {
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     console.log('Shoot data sent successfully');
+
+                    requestSVGInfo();
                 } else {
                     console.error('Error sending shoot data');
                 }
@@ -101,6 +149,7 @@ document.addEventListener("DOMContentLoaded", function() {
             shotLine.setAttribute('y2', 0);
         }
     });
+
 });
 </script>
 

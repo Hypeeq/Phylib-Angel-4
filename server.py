@@ -25,8 +25,10 @@ class MyHandler(BaseHTTPRequestHandler):
             self.serve_file('shoot.html', 'text/html')
         elif parsed_path.startswith('/table-'):
             self.serve_svg(parsed_path)
+        elif parsed_path == '/svg_info':
+            self.send_svg_info()
         else:
-            self.handle_not_found(parsed_path)
+            self.handle_not_found(parsed_path)   
 
     def do_POST(self):
         content_length = int(self.headers['Content-Length'])
@@ -63,8 +65,8 @@ class MyHandler(BaseHTTPRequestHandler):
 
     def process_shoot_post(self, post_data):
         post_data = json.loads(post_data.decode('utf-8'))  # Parse JSON data
-        velocityX = float(post_data.get('velocityX', 0))
-        velocityY = float(post_data.get('velocityY', 0))
+        velocityX = -float(post_data.get('velocityX', 0))
+        velocityY = -float(post_data.get('velocityY', 0))
         svg_data = post_data.get('svg', '')
 
         # Calculate speed
@@ -84,13 +86,31 @@ class MyHandler(BaseHTTPRequestHandler):
         print(tablee)
         # Perform shoot action in the game instance
         game_instance.shoot(gameName='Example' ,playerName='Player1', table=tablee, xvel=velocityX, yvel=velocityY)
+        self.send_svg_info()
 
-        # Send response back to the client
+    def send_svg_info(self):
+        # Retrieve SVG information array
+        db = Physics.Database();
+        data_arr = []
+        table_id = 2;
+        table = db.readTable( table_id );
+
+        while table:
+            svgdat = table.svg()
+            data_arr.append(svgdat)
+            table_id += 1;
+            table = db.readTable( table_id );
+            if not table:
+                break;
+
+        # Send SVG information array to the client
         self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-type', 'application/json')
         self.end_headers()
-        self.wfile.write(b'Shoot data received successfully')
-
+        response = json.dumps(data_arr)
+#        print(response)
+        self.wfile.write(response.encode('utf-8'))
+    
     def parse_svg(self, svg_data):
         root = ET.fromstring(svg_data)
 
@@ -123,7 +143,7 @@ class MyHandler(BaseHTTPRequestHandler):
                         
 
         return table
-
+   
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print("Usage: python server.py <port>")
